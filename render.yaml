@@ -1,0 +1,19 @@
+# Render.com deployment configuration
+services:
+  - type: web
+    name: journal-app-backend
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt && prisma generate
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard
+      - key: CORS_ORIGINS  
+        sync: false  # Set manually in Render dashboard
+      - key: ADMIN_PASSWORD
+        sync: false  # Set manually in Render dashboard
+      - key: VIEWER_PASSWORD
+        sync: false  # Set manually in Render dashboard

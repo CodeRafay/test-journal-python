@@ -1,19 +1,4 @@
 {
-  "functions": {
-    "backend/server.py": {
-      "runtime": "@vercel/python"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/server.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/build/$1"
-    }
-  ],
   "builds": [
     {
       "src": "frontend/package.json",
@@ -21,13 +6,15 @@
       "config": {
         "distDir": "build"
       }
-    },
-    {
-      "src": "backend/server.py",
-      "use": "@vercel/python"
     }
   ],
-  "installCommand": "cd frontend && yarn install && cd ../backend && pip install -r requirements.txt",
-  "buildCommand": "cd frontend && yarn build && cd ../backend && prisma generate",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/build/$1"
+    }
+  ],
+  "installCommand": "cd frontend && yarn install",
+  "buildCommand": "cd frontend && yarn build",
   "outputDirectory": "frontend/build"
 }
