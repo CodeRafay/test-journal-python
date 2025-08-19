@@ -8,7 +8,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (role) => {
+  const handleLogin = (role, errorMessage = null) => {
     if (role === 'admin') {
       localStorage.setItem('userRole', 'admin');
       navigate('/admin');
@@ -16,8 +16,8 @@ const LoginPage = () => {
       localStorage.setItem('userRole', 'viewer');
       navigate('/shared');
     } else {
-      setError('Invalid password. Please try again.');
-      setTimeout(() => setError(''), 3000);
+      setError(errorMessage || 'Invalid password. Please try again.');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
