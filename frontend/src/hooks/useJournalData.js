@@ -89,9 +89,9 @@ export const useJournalData = (isSharedOnly = false) => {
       const entriesList = await journalAPI.getEntriesList();
       const total = entriesList.length;
       const shared = entriesList.filter(entry => entry.isShared).length;
-      const private = total - shared;
+      const privateCount = total - shared;
       
-      return { total, shared, private };
+      return { total, shared, private: privateCount };
     } catch (err) {
       console.error('Failed to get stats:', err);
       return { total: 0, shared: 0, private: 0 };
