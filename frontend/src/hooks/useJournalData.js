@@ -83,20 +83,30 @@ export const useJournalData = (isSharedOnly = false) => {
     }
   }, [isSharedOnly]);
 
-  // Get statistics
-  const getStats = useCallback(async () => {
+  // Get statistics from already loaded entries (no additional API call)
+  const getStats = useCallback(() => {
     try {
-      const entriesList = await journalAPI.getEntriesList();
-      const total = entriesList.length;
-      const shared = entriesList.filter(entry => entry.isShared).length;
-      const privateCount = total - shared;
+      // Calculate stats from already loaded entries instead of making API call
+      let total = 0;
+      let shared = 0;
       
+      // Count entries from the loaded data
+      Object.values(entries).forEach(categoryEntries => {
+        categoryEntries.forEach(entry => {
+          total++;
+          if (entry.isShared) {
+            shared++;
+          }
+        });
+      });
+      
+      const privateCount = total - shared;
       return { total, shared, private: privateCount };
     } catch (err) {
-      console.error('Failed to get stats:', err);
+      console.error('Failed to calculate stats:', err);
       return { total: 0, shared: 0, private: 0 };
     }
-  }, []);
+  }, [entries]);
 
   // Initial load
   useEffect(() => {
