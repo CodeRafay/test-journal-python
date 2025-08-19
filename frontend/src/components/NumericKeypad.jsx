@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Delete, ArrowRight } from 'lucide-react';
@@ -7,6 +7,44 @@ import { journalAPI } from '../services/api';
 const NumericKeypad = ({ onLogin, error }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Add keyboard event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (isLoading) return; // Don't accept input while loading
+
+      const key = event.key;
+      
+      // Handle numeric keys 0-9
+      if (/^[0-9]$/.test(key) && password.length < 8) {
+        setPassword(prev => prev + key);
+        event.preventDefault();
+      }
+      // Handle backspace/delete
+      else if (key === 'Backspace' || key === 'Delete') {
+        setPassword(prev => prev.slice(0, -1));
+        event.preventDefault();
+      }
+      // Handle enter key
+      else if (key === 'Enter' && password.length === 8) {
+        handleEnter();
+        event.preventDefault();
+      }
+      // Handle escape to clear
+      else if (key === 'Escape') {
+        setPassword('');
+        event.preventDefault();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [password, isLoading]); // Dependencies for the effect
 
   const handleNumberClick = (number) => {
     if (password.length < 8) {
