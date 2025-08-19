@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 # Health check endpoint
 @api_router.get("/")
 async def root():
-    return {"message": "Journal API is running"}
+    return {"message": "Journal API is running with Prisma + PostgreSQL"}
 
 # Authentication endpoints
 @api_router.post("/login", response_model=LoginResponse)
@@ -114,7 +114,7 @@ async def get_entries_endpoint(
         logger.error(f"Get entries error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch entries")
 
-@api_router.post("/entries", response_model=Entry)
+@api_router.post("/entries", response_model=EntryResponse)
 async def create_entry_endpoint(request: Request, entry_data: EntryCreate):
     """Create a new journal entry (admin only)"""
     try:
@@ -128,7 +128,7 @@ async def create_entry_endpoint(request: Request, entry_data: EntryCreate):
         logger.error(f"Create entry error: {e}")
         raise HTTPException(status_code=500, detail="Failed to create entry")
 
-@api_router.put("/entries/{entry_id}", response_model=Entry)
+@api_router.put("/entries/{entry_id}", response_model=EntryResponse)
 async def update_entry_endpoint(request: Request, entry_id: str, entry_update: EntryUpdate):
     """Update an existing entry (admin only)"""
     try:
