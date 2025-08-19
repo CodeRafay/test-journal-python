@@ -222,3 +222,5 @@ test_plan:
 agent_communication:
     - agent: "testing"
       message: "Comprehensive backend testing completed successfully. Fixed critical MongoDB search query bug. All 32 test cases now passing with 100% success rate. Backend API is fully functional and ready for production use."
+    - agent: "main"
+      message: "Fixed infinite loading loop issue in frontend dashboards. The problem was in AdminDashboard.jsx useEffect that recalculated stats every time entries changed, causing additional API calls. Optimized by: 1) Using useMemo for stats calculation instead of useEffect, 2) Modified getStats to calculate from loaded data instead of making API calls, 3) Stabilized initial data loading in useJournalData hook, 4) Added useCallback optimizations. Need to test frontend functionality after fixes."
