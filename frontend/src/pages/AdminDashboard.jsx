@@ -54,13 +54,9 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
-  // Load stats
-  useEffect(() => {
-    const loadStats = async () => {
-      const statsData = await getStats();
-      setStats(statsData);
-    };
-    loadStats();
+  // Load stats - use useMemo to prevent excessive recalculations
+  const stats = useMemo(() => {
+    return getStats();
   }, [entries, getStats]);
 
   // Handle search with debouncing
