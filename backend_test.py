@@ -160,13 +160,14 @@ class JournalAPITester:
                     success = (data.get("title") == entry_data["title"] and
                               data.get("content") == entry_data["content"] and
                               data.get("category") == entry_data["category"] and
-                              "id" in data)
+                              ("_id" in data or "id" in data))
                     
-                    if success and "id" in data:
-                        self.created_entries.append(data["id"])
+                    entry_id = data.get("_id") or data.get("id")
+                    if success and entry_id:
+                        self.created_entries.append(entry_id)
                     
                     self.log_test(f"Create Entry {i+1} (Admin)", success, 
-                                f"Entry ID: {data.get('id', 'N/A')}")
+                                f"Entry ID: {entry_id or 'N/A'}")
                 else:
                     self.log_test(f"Create Entry {i+1} (Admin)", False, 
                                 f"Status: {response.status_code}, Response: {response.text}")
