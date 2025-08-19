@@ -40,11 +40,6 @@ const AdminDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [stats, setStats] = useState({
-    total: 0,
-    shared: 0,
-    private: 0
-  });
 
   // Check authentication
   useEffect(() => {
