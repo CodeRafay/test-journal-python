@@ -101,7 +101,7 @@ export const useJournalData = (isSharedOnly = false) => {
   // Initial load
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, []); // Remove loadData from dependencies to prevent infinite loop
 
   return {
     entries,
