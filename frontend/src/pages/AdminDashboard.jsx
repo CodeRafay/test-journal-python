@@ -55,16 +55,16 @@ const AdminDashboard = () => {
   }, [entries, getStats]);
 
   // Handle search with debouncing
-  const handleSearch = (query) => {
+  const handleSearch = useCallback((query) => {
     setSearchQuery(query);
     loadData(query, selectedCategory);
-  };
+  }, [loadData, selectedCategory]);
 
   // Handle category filter
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
     loadData(searchQuery, category);
-  };
+  }, [loadData, searchQuery]);
 
   const handleCreateEntry = () => {
     setEditingEntry(null);
