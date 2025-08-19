@@ -24,16 +24,19 @@ class EntryUpdate(BaseModel):
     tags: Optional[List[str]] = None
     isShared: Optional[bool] = None
 
-class Entry(EntryBase):
-    id: str = Field(alias="_id")
+class EntryResponse(EntryBase):
+    id: str
     dateCreated: datetime
     dateModified: datetime
     
     class Config:
-        populate_by_name = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+# For backward compatibility, keep Entry as alias
+Entry = EntryResponse
 
 class LoginRequest(BaseModel):
     password: str

@@ -1,10 +1,10 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import IndexModel, ASCENDING, TEXT
+from prisma import Prisma
+from prisma.models import Entry
 import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 import uuid
-from models import Entry, EntryCreate, EntryUpdate
+from models import EntryCreate, EntryUpdate
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -12,113 +12,109 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-entries_collection = db.entries
+# Prisma client instance
+prisma = Prisma()
 
 async def init_database():
-    """Initialize database with indexes"""
+    """Initialize database connection and ensure schema is deployed"""
     try:
-        # Create indexes for better performance
-        indexes = [
-            IndexModel([("title", TEXT), ("content", TEXT), ("tags", TEXT)]),
-            IndexModel([("category", ASCENDING)]),
-            IndexModel([("isShared", ASCENDING)]),
-            IndexModel([("dateCreated", ASCENDING)])
-        ]
-        await entries_collection.create_indexes(indexes)
-        print("Database indexes created successfully")
+        await prisma.connect()
+        print("Connected to PostgreSQL database via Prisma")
     except Exception as e:
-        print(f"Database initialization error: {e}")
+        print(f"Database connection error: {e}")
 
 async def create_entry(entry_data: EntryCreate) -> Entry:
     """Create a new journal entry"""
-    entry_dict = entry_data.dict()
-    entry_dict["_id"] = str(uuid.uuid4())
-    entry_dict["dateCreated"] = datetime.utcnow()
-    entry_dict["dateModified"] = datetime.utcnow()
-    
-    result = await entries_collection.insert_one(entry_dict)
-    
-    # Fetch the created entry
-    created_entry = await entries_collection.find_one({"_id": result.inserted_id})
-    return Entry(**created_entry)
+    entry = await prisma.entry.create(
+        data={
+            'title': entry_data.title,
+            'content': entry_data.content,
+            'category': entry_data.category,
+            'tags': entry_data.tags,
+            'isShared': entry_data.isShared,
+        }
+    )
+    return entry
 
 async def get_entries(search: Optional[str] = None, category: Optional[str] = None, shared_only: bool = False) -> List[Entry]:
     """Get entries with optional search and filtering"""
-    query = {}
+    where_conditions = {}
     
     # Filter by visibility
     if shared_only:
-        query["isShared"] = True
+        where_conditions['isShared'] = True
     
     # Filter by category
     if category and category != "all":
-        query["category"] = category
+        where_conditions['category'] = category
     
-    # Add search functionality
+    # Add search functionality (PostgreSQL text search)
     if search:
-        query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"content": {"$regex": search, "$options": "i"}},
-            {"tags": {"$regex": search, "$options": "i"}}
+        where_conditions['OR'] = [
+            {'title': {'contains': search, 'mode': 'insensitive'}},
+            {'content': {'contains': search, 'mode': 'insensitive'}},
+            {'tags': {'has': search}},  # Search in array
         ]
     
     # Fetch entries sorted by date created (newest first)
-    cursor = entries_collection.find(query).sort("dateCreated", -1).limit(50)
-    entries = await cursor.to_list(length=50)
+    entries = await prisma.entry.find_many(
+        where=where_conditions,
+        order_by={'dateCreated': 'desc'},
+        take=50
+    )
     
-    return [Entry(**entry) for entry in entries]
+    return entries
 
 async def get_entry_by_id(entry_id: str) -> Optional[Entry]:
     """Get a single entry by ID"""
-    entry = await entries_collection.find_one({"_id": entry_id})
-    if entry:
-        return Entry(**entry)
-    return None
+    entry = await prisma.entry.find_unique(
+        where={'id': entry_id}
+    )
+    return entry
 
 async def update_entry(entry_id: str, entry_update: EntryUpdate) -> Optional[Entry]:
     """Update an existing entry"""
-    update_data = {k: v for k, v in entry_update.dict().items() if v is not None}
+    update_data = {k: v for k, v in entry_update.dict(exclude_unset=True).items() if v is not None}
     
     if not update_data:
         return await get_entry_by_id(entry_id)
     
-    update_data["dateModified"] = datetime.utcnow()
-    
-    result = await entries_collection.update_one(
-        {"_id": entry_id},
-        {"$set": update_data}
-    )
-    
-    if result.modified_count == 0:
+    try:
+        updated_entry = await prisma.entry.update(
+            where={'id': entry_id},
+            data=update_data
+        )
+        return updated_entry
+    except Exception:
+        # Entry not found
         return None
-    
-    return await get_entry_by_id(entry_id)
 
 async def delete_entry(entry_id: str) -> bool:
     """Delete an entry"""
-    result = await entries_collection.delete_one({"_id": entry_id})
-    return result.deleted_count > 0
+    try:
+        await prisma.entry.delete(
+            where={'id': entry_id}
+        )
+        return True
+    except Exception:
+        # Entry not found
+        return False
 
 async def get_categories(shared_only: bool = False) -> List[str]:
     """Get all unique categories"""
-    query = {}
+    where_condition = {}
     if shared_only:
-        query["isShared"] = True
+        where_condition['isShared'] = True
     
-    pipeline = [
-        {"$match": query},
-        {"$group": {"_id": "$category"}},
-        {"$sort": {"_id": 1}}
-    ]
+    # Get unique categories using Prisma's distinct
+    entries = await prisma.entry.find_many(
+        where=where_condition,
+        distinct=['category'],
+        select={'category': True}
+    )
     
-    cursor = entries_collection.aggregate(pipeline)
-    categories = [doc["_id"] async for doc in cursor if doc["_id"]]
-    
-    return categories
+    categories = [entry.category for entry in entries if entry.category]
+    return sorted(categories)
 
 async def get_entries_grouped_by_category(search: Optional[str] = None, shared_only: bool = False) -> Dict[str, List[Entry]]:
     """Get entries grouped by category"""
@@ -135,4 +131,4 @@ async def get_entries_grouped_by_category(search: Optional[str] = None, shared_o
 
 async def close_database():
     """Close database connection"""
-    client.close()
+    await prisma.disconnect()

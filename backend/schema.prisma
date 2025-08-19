@@ -1,0 +1,35 @@
+// Prisma Schema for Journal App
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Entry {
+  id           String   @id @default(uuid())
+  title        String
+  content      String
+  category     String
+  tags         String[] // PostgreSQL supports string arrays
+  isShared     Boolean  @default(false) @map("is_shared")
+  dateCreated  DateTime @default(now()) @map("date_created")
+  dateModified DateTime @updatedAt @map("date_modified")
+
+  @@index([title, content]) // Full-text search will use these
+  @@index([category])
+  @@index([isShared])
+  @@index([dateCreated])
+  @@map("entries")
+}
+
+model User {
+  id       String @id @default(uuid())
+  role     String // "admin" or "viewer"  
+  password String // bcrypt hashed password
+  
+  @@map("users")
+}
