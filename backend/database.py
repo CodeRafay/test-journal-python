@@ -63,7 +63,7 @@ async def get_entries(search: Optional[str] = None, category: Optional[str] = No
         query["$or"] = [
             {"title": {"$regex": search, "$options": "i"}},
             {"content": {"$regex": search, "$options": "i"}},
-            {"tags": {"$in": [{"$regex": search, "$options": "i"}]}}
+            {"tags": {"$regex": search, "$options": "i"}}
         ]
     
     # Fetch entries sorted by date created (newest first)
