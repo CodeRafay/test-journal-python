@@ -29,12 +29,11 @@ class Entry(EntryBase):
     dateCreated: datetime
     dateModified: datetime
     
-    model_config = {
-        "populate_by_name": True,
-        "json_encoders": {
+    class Config:
+        populate_by_name = True
+        json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-    }
 
 class LoginRequest(BaseModel):
     password: str
