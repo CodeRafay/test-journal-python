@@ -54,10 +54,12 @@ const ViewerDashboard = () => {
     }
   };
 
-  // Calculate total entries count
-  const totalEntries = Object.values(entries).reduce((total, categoryEntries) => {
-    return total + categoryEntries.length;
-  }, 0);
+  // Calculate total entries count with useMemo
+  const totalEntries = useMemo(() => {
+    return Object.values(entries).reduce((total, categoryEntries) => {
+      return total + categoryEntries.length;
+    }, 0);
+  }, [entries]);
 
   // Clear error after some time
   useEffect(() => {
