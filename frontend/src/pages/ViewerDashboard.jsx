@@ -31,15 +31,15 @@ const ViewerDashboard = () => {
     }
   }, [navigate]);
 
-  const handleSearch = (query) => {
+  const handleSearch = useCallback((query) => {
     setSearchQuery(query);
     loadData(query, selectedCategory);
-  };
+  }, [loadData, selectedCategory]);
 
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
     loadData(searchQuery, category);
-  };
+  }, [loadData, searchQuery]);
 
   const handleLogout = async () => {
     try {
