@@ -5,19 +5,23 @@ import SearchBar from '../components/SearchBar';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
-import { LogOut, Users, Eye, BookOpen, Filter } from 'lucide-react';
-import {
-  getMockSharedEntries,
-  searchMockEntries,
-  getEntriesByCategory
-} from '../mock';
+import { LogOut, Users, Eye, BookOpen, Filter, Loader2 } from 'lucide-react';
+import { useJournalData } from '../hooks/useJournalData';
+import { journalAPI } from '../services/api';
 
 const ViewerDashboard = () => {
   const navigate = useNavigate();
-  const [entries, setEntries] = useState([]);
+  const {
+    entries,
+    categories,
+    loading,
+    error,
+    loadData,
+    clearError
+  } = useJournalData(true);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [categories, setCategories] = useState([]);
 
   // Check authentication
   useEffect(() => {
@@ -27,46 +31,43 @@ const ViewerDashboard = () => {
     }
   }, [navigate]);
 
-  // Load shared entries
-  useEffect(() => {
-    const sharedEntries = getMockSharedEntries();
-    setEntries(sharedEntries);
-    
-    // Get categories from shared entries only
-    const sharedCategories = [...new Set(sharedEntries.map(entry => entry.category))];
-    setCategories(sharedCategories);
-  }, []);
-
   const handleSearch = (query) => {
     setSearchQuery(query);
+    loadData(query, selectedCategory);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    navigate('/');
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    loadData(searchQuery, category);
   };
 
-  const groupedEntries = () => {
-    const grouped = getEntriesByCategory(true); // Only shared entries
-    const result = {};
-    
-    Object.keys(grouped).forEach(category => {
-      if (selectedCategory === 'all' || category === selectedCategory) {
-        const categoryEntries = grouped[category].filter(entry => {
-          if (!searchQuery) return true;
-          return entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 entry.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-        });
-        
-        if (categoryEntries.length > 0) {
-          result[category] = categoryEntries;
-        }
-      }
-    });
-    
-    return result;
+  const handleLogout = async () => {
+    try {
+      await journalAPI.logout();
+      localStorage.removeItem('userRole');
+      navigate('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Force logout even if API call fails
+      localStorage.removeItem('userRole');
+      navigate('/');
+    }
   };
+
+  // Calculate total entries count
+  const totalEntries = Object.values(entries).reduce((total, categoryEntries) => {
+    return total + categoryEntries.length;
+  }, 0);
+
+  // Clear error after some time
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -103,7 +104,7 @@ const ViewerDashboard = () => {
                   <Eye className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{entries.length}</p>
+                  <p className="text-2xl font-bold text-gray-100">{totalEntries}</p>
                   <p className="text-gray-400 text-sm">Shared Entries</p>
                 </div>
               </div>
@@ -136,7 +137,7 @@ const ViewerDashboard = () => {
               <Filter className="w-4 h-4 text-gray-500" />
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-gray-100 focus:border-red-600 focus:ring-1 focus:ring-red-600/20"
               >
                 <option value="all">All Categories</option>
@@ -148,46 +149,65 @@ const ViewerDashboard = () => {
           )}
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+            <span className="ml-2 text-gray-400">Loading entries...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="bg-red-900/20 border-red-700 mb-6">
+            <CardContent className="p-4">
+              <p className="text-red-400">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Entries by Category */}
-        <div className="space-y-8">
-          {Object.keys(groupedEntries()).length === 0 ? (
-            <Card className="bg-gray-800/30 border-gray-700">
-              <CardContent className="p-12 text-center">
-                <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-300 mb-2">
-                  {searchQuery ? 'No entries found' : 'No shared entries'}
-                </h3>
-                <p className="text-gray-500">
-                  {searchQuery 
-                    ? 'Try adjusting your search terms or filters'
-                    : 'The admin hasn\'t shared any entries yet'
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            Object.entries(groupedEntries()).map(([category, categoryEntries]) => (
-              <div key={category}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <h2 className="text-xl font-semibold text-gray-100">{category}</h2>
-                  <Badge variant="outline" className="border-gray-600 text-gray-400">
-                    {categoryEntries.length} {categoryEntries.length === 1 ? 'entry' : 'entries'}
-                  </Badge>
+        {!loading && (
+          <div className="space-y-8">
+            {Object.keys(entries).length === 0 ? (
+              <Card className="bg-gray-800/30 border-gray-700">
+                <CardContent className="p-12 text-center">
+                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                    {searchQuery ? 'No entries found' : 'No shared entries'}
+                  </h3>
+                  <p className="text-gray-500">
+                    {searchQuery 
+                      ? 'Try adjusting your search terms or filters'
+                      : 'The admin hasn\'t shared any entries yet'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              Object.entries(entries).map(([category, categoryEntries]) => (
+                <div key={category}>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <h2 className="text-xl font-semibold text-gray-100">{category}</h2>
+                    <Badge variant="outline" className="border-gray-600 text-gray-400">
+                      {categoryEntries.length} {categoryEntries.length === 1 ? 'entry' : 'entries'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {categoryEntries.map(entry => (
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        isAdmin={false}
+                      />
+                    ))}
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {categoryEntries.map(entry => (
-                    <EntryCard
-                      key={entry.id}
-                      entry={entry}
-                      isAdmin={false}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

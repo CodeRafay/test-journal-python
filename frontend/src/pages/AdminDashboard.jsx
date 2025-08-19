@@ -5,32 +5,37 @@ import EntryForm from '../components/EntryForm';
 import SearchBar from '../components/SearchBar';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
+import { useToast } from '../hooks/use-toast';
 import { 
   Plus, 
   LogOut, 
   BookOpen, 
-  Users, 
   Eye,
   EyeOff,
   Filter,
-  Grid3X3
+  Grid3X3,
+  Loader2
 } from 'lucide-react';
-import {
-  getMockEntries,
-  addMockEntry,
-  updateMockEntry,
-  deleteMockEntry,
-  searchMockEntries,
-  getCategories,
-  getEntriesByCategory
-} from '../mock';
+import { useJournalData } from '../hooks/useJournalData';
+import { journalAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [entries, setEntries] = useState([]);
-  const [filteredEntries, setFilteredEntries] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const { toast } = useToast();
+  const {
+    entries,
+    categories,
+    loading,
+    error,
+    loadData,
+    createEntry,
+    updateEntry,
+    deleteEntry,
+    getStats,
+    clearError
+  } = useJournalData(false);
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -49,44 +54,25 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
-  // Load initial data
+  // Load stats
   useEffect(() => {
-    loadEntries();
-  }, []);
+    const loadStats = async () => {
+      const statsData = await getStats();
+      setStats(statsData);
+    };
+    loadStats();
+  }, [entries, getStats]);
 
-  // Update filtered entries when search query or category changes
-  useEffect(() => {
-    filterEntries();
-  }, [entries, searchQuery, selectedCategory]);
-
-  const loadEntries = () => {
-    const allEntries = getMockEntries();
-    setEntries(allEntries);
-    setCategories(getCategories());
-    
-    // Update stats
-    const shared = allEntries.filter(entry => entry.isShared).length;
-    setStats({
-      total: allEntries.length,
-      shared,
-      private: allEntries.length - shared
-    });
-  };
-
-  const filterEntries = () => {
-    let filtered = searchQuery 
-      ? searchMockEntries(searchQuery, false)
-      : entries;
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(entry => entry.category === selectedCategory);
-    }
-
-    setFilteredEntries(filtered);
-  };
-
+  // Handle search with debouncing
   const handleSearch = (query) => {
     setSearchQuery(query);
+    loadData(query, selectedCategory);
+  };
+
+  // Handle category filter
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    loadData(searchQuery, category);
   };
 
   const handleCreateEntry = () => {
@@ -99,59 +85,104 @@ const AdminDashboard = () => {
     setShowForm(true);
   };
 
-  const handleSaveEntry = (formData) => {
+  const handleSaveEntry = async (formData) => {
+    let success = false;
+    
     if (editingEntry) {
-      updateMockEntry(editingEntry.id, formData);
-    } else {
-      addMockEntry(formData);
-    }
-    
-    setShowForm(false);
-    setEditingEntry(null);
-    loadEntries();
-  };
-
-  const handleDeleteEntry = (entryId) => {
-    if (window.confirm('Are you sure you want to delete this entry?')) {
-      deleteMockEntry(entryId);
-      loadEntries();
-    }
-  };
-
-  const handleToggleVisibility = (entryId) => {
-    const entry = entries.find(e => e.id === entryId);
-    if (entry) {
-      updateMockEntry(entryId, { isShared: !entry.isShared });
-      loadEntries();
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    navigate('/');
-  };
-
-  const groupedEntries = () => {
-    const grouped = getEntriesByCategory(false);
-    const result = {};
-    
-    Object.keys(grouped).forEach(category => {
-      if (selectedCategory === 'all' || category === selectedCategory) {
-        const categoryEntries = grouped[category].filter(entry => {
-          if (!searchQuery) return true;
-          return entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 entry.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      success = await updateEntry(editingEntry.id, formData);
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Entry updated successfully",
         });
-        
-        if (categoryEntries.length > 0) {
-          result[category] = categoryEntries;
-        }
       }
-    });
+    } else {
+      success = await createEntry(formData);
+      if (success) {
+        toast({
+          title: "Success", 
+          description: "Entry created successfully",
+        });
+      }
+    }
     
-    return result;
+    if (success) {
+      setShowForm(false);
+      setEditingEntry(null);
+    } else {
+      toast({
+        title: "Error",
+        description: error || "Operation failed",
+        variant: "destructive",
+      });
+    }
   };
+
+  const handleDeleteEntry = async (entryId) => {
+    if (window.confirm('Are you sure you want to delete this entry?')) {
+      const success = await deleteEntry(entryId);
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Entry deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error", 
+          description: error || "Failed to delete entry",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleToggleVisibility = async (entryId) => {
+    // Find the entry in current entries
+    let targetEntry = null;
+    Object.values(entries).forEach(categoryEntries => {
+      const found = categoryEntries.find(e => e.id === entryId);
+      if (found) targetEntry = found;
+    });
+
+    if (targetEntry) {
+      const success = await updateEntry(entryId, { isShared: !targetEntry.isShared });
+      if (success) {
+        toast({
+          title: "Success",
+          description: `Entry ${targetEntry.isShared ? 'made private' : 'shared'} successfully`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error || "Failed to update entry visibility",
+          variant: "destructive", 
+        });
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await journalAPI.logout();
+      localStorage.removeItem('userRole');
+      navigate('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Force logout even if API call fails
+      localStorage.removeItem('userRole'); 
+      navigate('/');
+    }
+  };
+
+  // Clear error when component unmounts or error changes
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   if (showForm) {
     return (
@@ -252,7 +283,7 @@ const AdminDashboard = () => {
               <Filter className="w-4 h-4 text-gray-500" />
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-gray-100 focus:border-red-600 focus:ring-1 focus:ring-red-600/20"
               >
                 <option value="all">All Categories</option>
@@ -272,58 +303,77 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+            <span className="ml-2 text-gray-400">Loading entries...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="bg-red-900/20 border-red-700 mb-6">
+            <CardContent className="p-4">
+              <p className="text-red-400">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Entries by Category */}
-        <div className="space-y-8">
-          {Object.keys(groupedEntries()).length === 0 ? (
-            <Card className="bg-gray-800/30 border-gray-700">
-              <CardContent className="p-12 text-center">
-                <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-300 mb-2">
-                  {searchQuery ? 'No entries found' : 'No entries yet'}
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  {searchQuery 
-                    ? 'Try adjusting your search terms or filters'
-                    : 'Create your first journal entry to get started'
-                  }
-                </p>
-                {!searchQuery && (
-                  <Button
-                    onClick={handleCreateEntry}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Entry
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            Object.entries(groupedEntries()).map(([category, categoryEntries]) => (
-              <div key={category}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <h2 className="text-xl font-semibold text-gray-100">{category}</h2>
-                  <Badge variant="outline" className="border-gray-600 text-gray-400">
-                    {categoryEntries.length} {categoryEntries.length === 1 ? 'entry' : 'entries'}
-                  </Badge>
+        {!loading && (
+          <div className="space-y-8">
+            {Object.keys(entries).length === 0 ? (
+              <Card className="bg-gray-800/30 border-gray-700">
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                    {searchQuery ? 'No entries found' : 'No entries yet'}
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchQuery 
+                      ? 'Try adjusting your search terms or filters'
+                      : 'Create your first journal entry to get started'
+                    }
+                  </p>
+                  {!searchQuery && (
+                    <Button
+                      onClick={handleCreateEntry}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Entry
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              Object.entries(entries).map(([category, categoryEntries]) => (
+                <div key={category}>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <h2 className="text-xl font-semibold text-gray-100">{category}</h2>
+                    <Badge variant="outline" className="border-gray-600 text-gray-400">
+                      {categoryEntries.length} {categoryEntries.length === 1 ? 'entry' : 'entries'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {categoryEntries.map(entry => (
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        isAdmin={true}
+                        onEdit={handleEditEntry}
+                        onDelete={handleDeleteEntry}
+                        onToggleVisibility={handleToggleVisibility}
+                      />
+                    ))}
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {categoryEntries.map(entry => (
-                    <EntryCard
-                      key={entry.id}
-                      entry={entry}
-                      isAdmin={true}
-                      onEdit={handleEditEntry}
-                      onDelete={handleDeleteEntry}
-                      onToggleVisibility={handleToggleVisibility}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
