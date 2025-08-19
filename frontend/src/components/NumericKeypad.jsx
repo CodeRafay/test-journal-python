@@ -95,7 +95,7 @@ const NumericKeypad = ({ onLogin, error }) => {
                   variant="outline"
                   size="lg"
                   onClick={handleDelete}
-                  className="h-16 w-16 bg-gray-700 border-gray-600 hover:bg-red-600/20 text-gray-300 hover:text-red-400"
+                  className="h-14 w-14 bg-gray-700 border-gray-600 hover:bg-red-600/20 text-gray-300 hover:text-red-400"
                 >
                   <Delete className="w-5 h-5" />
                 </Button>
