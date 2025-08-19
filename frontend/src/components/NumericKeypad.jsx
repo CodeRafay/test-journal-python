@@ -56,22 +56,23 @@ const NumericKeypad = ({ onLogin, error }) => {
   ];
 
   return (
-    <div className="flex flex-col items-center space-y-8">
-      {/* Password Input Boxes */}
-      <div className="flex space-x-3">
-        {renderPasswordBoxes()}
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="text-red-500 text-sm font-medium">
-          {error}
+    <div className="flex flex-col items-center space-y-6">
+      {/* Numeric Keypad Card */}
+      <Card className="p-6 bg-gray-800/50 border-gray-700 w-full max-w-sm">
+        {/* Password Input Boxes */}
+        <div className="flex justify-center space-x-2 mb-6">
+          {renderPasswordBoxes()}
         </div>
-      )}
 
-      {/* Numeric Keypad */}
-      <Card className="p-6 bg-gray-800/50 border-gray-700">
-        <div className="grid grid-cols-3 gap-4">
+        {/* Error Message */}
+        {error && (
+          <div className="text-red-500 text-sm font-medium text-center mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* Numeric Keypad Grid */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
           {numbers.flat().map((item, index) => {
             if (item === 'C') {
               return (
