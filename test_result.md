@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the journal API backend thoroughly including authentication, CRUD operations, access control, search functionality, and data validation"
+user_problem_statement: "Migrate Journal App from MongoDB to Prisma + Vercel Storage (PostgreSQL) while maintaining all existing functionality"
 
 backend:
   - task: "Authentication System"
