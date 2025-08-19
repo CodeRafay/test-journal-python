@@ -108,10 +108,30 @@ export const useJournalData = (isSharedOnly = false) => {
     }
   }, [entries]);
 
-  // Initial load
+  // Initial load - use useEffect with stable dependency
   useEffect(() => {
-    loadData();
-  }, []); // Remove loadData from dependencies to prevent infinite loop
+    const initialLoad = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const [entriesData, categoriesData] = await Promise.all([
+          journalAPI.getEntries('', 'all'),
+          journalAPI.getCategories()
+        ]);
+        
+        setEntries(entriesData);
+        setCategories(categoriesData);
+      } catch (err) {
+        setError(err.message);
+        console.error('Failed to load journal data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initialLoad();
+  }, []); // Empty dependency array - only run once on mount
 
   return {
     entries,
