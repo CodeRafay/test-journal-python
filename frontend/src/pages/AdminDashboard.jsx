@@ -80,7 +80,7 @@ const AdminDashboard = () => {
     let success = false;
     
     if (editingEntry) {
-      success = await updateEntry(editingEntry.id, formData);
+      success = await updateEntry(editingEntry._id, formData);
       if (success) {
         toast({
           title: "Success",
