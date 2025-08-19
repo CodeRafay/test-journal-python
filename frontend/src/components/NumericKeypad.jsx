@@ -117,7 +117,7 @@ const NumericKeypad = ({ onLogin, error }) => {
         </div>
         
         {/* Enter Button */}
-        <div className="mt-6 flex justify-center">
+        <div className="flex justify-center">
           <Button
             onClick={handleEnter}
             disabled={password.length !== 8}
