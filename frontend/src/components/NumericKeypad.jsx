@@ -108,7 +108,7 @@ const NumericKeypad = ({ onLogin, error }) => {
                 variant="outline"
                 size="lg"
                 onClick={() => handleNumberClick(item.toString())}
-                className="h-16 w-16 text-lg font-bold bg-gray-800 border-gray-600 hover:bg-red-600/20 hover:border-red-600/50 text-gray-300 hover:text-red-400 transition-all duration-200"
+                className="h-14 w-14 text-lg font-bold bg-gray-800 border-gray-600 hover:bg-red-600/20 hover:border-red-600/50 text-gray-300 hover:text-red-400 transition-all duration-200"
               >
                 {item}
               </Button>
