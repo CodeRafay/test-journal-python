@@ -107,7 +107,6 @@ class JournalAPITester:
         """Test that unauthenticated requests are rejected"""
         endpoints_to_test = [
             ("/entries", "GET"),
-            ("/entries", "POST"),
             ("/categories", "GET")
         ]
         
@@ -115,15 +114,28 @@ class JournalAPITester:
             try:
                 if method == "GET":
                     response = self.unauthenticated_session.get(f"{BASE_URL}{endpoint}")
-                elif method == "POST":
-                    response = self.unauthenticated_session.post(f"{BASE_URL}{endpoint}", 
-                                                               json={"title": "test"})
                 
                 success = response.status_code == 401
                 self.log_test(f"Unauthenticated {method} {endpoint} Rejected", success,
                             f"Status: {response.status_code}")
             except Exception as e:
                 self.log_test(f"Unauthenticated {method} {endpoint} Rejected", False, f"Error: {str(e)}")
+        
+        # Test unauthenticated POST with valid data (should return 401)
+        try:
+            valid_data = {
+                "title": "Test Entry",
+                "content": "Test content", 
+                "category": "Test",
+                "tags": [],
+                "isShared": False
+            }
+            response = self.unauthenticated_session.post(f"{BASE_URL}/entries", json=valid_data)
+            success = response.status_code == 401
+            self.log_test("Unauthenticated POST /entries with Valid Data Rejected", success,
+                        f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_test("Unauthenticated POST /entries with Valid Data Rejected", False, f"Error: {str(e)}")
     
     def test_create_entry_admin(self):
         """Test creating journal entries as admin"""
