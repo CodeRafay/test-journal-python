@@ -37,7 +37,7 @@ const NumericKeypad = ({ onLogin, error }) => {
     return Array.from({ length: 8 }, (_, index) => (
       <div
         key={index}
-        className={`w-12 h-12 border-2 rounded-lg flex items-center justify-center text-lg font-bold
+        className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg font-bold
           ${password.length > index 
             ? 'border-red-600 bg-red-600/10 text-red-400' 
             : 'border-gray-700 bg-gray-800/50'
