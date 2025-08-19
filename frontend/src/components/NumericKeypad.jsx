@@ -81,7 +81,7 @@ const NumericKeypad = ({ onLogin, error }) => {
                   variant="outline"
                   size="lg"
                   onClick={handleClear}
-                  className="h-16 w-16 text-lg font-bold bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-300"
+                  className="h-14 w-14 text-lg font-bold bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-300"
                 >
                   C
                 </Button>
