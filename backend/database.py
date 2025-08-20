@@ -91,6 +91,10 @@ async def update_entry(entry_id: str, entry_update: EntryUpdate) -> Optional[Ent
     """Update an existing entry"""
     update_data = {k: v for k, v in entry_update.dict(exclude_unset=True).items() if v is not None}
     
+    # Convert tags array to comma-separated string if present
+    if 'tags' in update_data and isinstance(update_data['tags'], list):
+        update_data['tags'] = ",".join(update_data['tags'])
+    
     if not update_data:
         return await get_entry_by_id(entry_id)
     
@@ -99,6 +103,8 @@ async def update_entry(entry_id: str, entry_update: EntryUpdate) -> Optional[Ent
             where={'id': entry_id},
             data=update_data
         )
+        # Convert tags back to array for response
+        updated_entry.tags = updated_entry.tags.split(",") if updated_entry.tags else []
         return updated_entry
     except Exception:
         # Entry not found
