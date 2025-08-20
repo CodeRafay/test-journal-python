@@ -110,9 +110,7 @@ async def get_categories(shared_only: bool = False) -> List[str]:
     
     # Get unique categories using Prisma's distinct
     entries = await prisma.entry.find_many(
-        where=where_condition,
-        distinct=['category'],
-        select={'category': True}
+        where=where_condition
     )
     
     categories = [entry.category for entry in entries if entry.category]
