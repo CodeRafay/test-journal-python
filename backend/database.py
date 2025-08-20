@@ -25,15 +25,21 @@ async def init_database():
 
 async def create_entry(entry_data: EntryCreate) -> Entry:
     """Create a new journal entry"""
+    # Convert tags array to comma-separated string for SQLite
+    tags_str = ",".join(entry_data.tags) if entry_data.tags else ""
+    
     entry = await prisma.entry.create(
         data={
             'title': entry_data.title,
             'content': entry_data.content,
             'category': entry_data.category,
-            'tags': entry_data.tags,
+            'tags': tags_str,
             'isShared': entry_data.isShared,
         }
     )
+    
+    # Convert tags back to array for response
+    entry.tags = entry.tags.split(",") if entry.tags else []
     return entry
 
 async def get_entries(search: Optional[str] = None, category: Optional[str] = None, shared_only: bool = False) -> List[Entry]:
