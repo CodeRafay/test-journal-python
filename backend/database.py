@@ -54,12 +54,12 @@ async def get_entries(search: Optional[str] = None, category: Optional[str] = No
     if category and category != "all":
         where_conditions['category'] = category
     
-    # Add search functionality (PostgreSQL text search)
+    # Add search functionality (SQLite text search)
     if search:
         where_conditions['OR'] = [
-            {'title': {'contains': search, 'mode': 'insensitive'}},
-            {'content': {'contains': search, 'mode': 'insensitive'}},
-            {'tags': {'has': search}},  # Search in array
+            {'title': {'contains': search}},
+            {'content': {'contains': search}},
+            {'tags': {'contains': search}},  # Search in comma-separated tags
         ]
     
     # Fetch entries sorted by date created (newest first)
@@ -70,6 +70,10 @@ async def get_entries(search: Optional[str] = None, category: Optional[str] = No
     
     # Sort in Python since Prisma syntax is having issues
     entries = sorted(entries, key=lambda x: x.dateCreated, reverse=True)
+    
+    # Convert tags from string to array for all entries
+    for entry in entries:
+        entry.tags = entry.tags.split(",") if entry.tags else []
     
     return entries
 
