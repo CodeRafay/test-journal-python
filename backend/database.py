@@ -113,7 +113,7 @@ async def get_categories(shared_only: bool = False) -> List[str]:
         where=where_condition
     )
     
-    categories = [entry.category for entry in entries if entry.category]
+    categories = list(set([entry.category for entry in entries if entry.category]))
     return sorted(categories)
 
 async def get_entries_grouped_by_category(search: Optional[str] = None, shared_only: bool = False) -> Dict[str, List[Entry]]:
