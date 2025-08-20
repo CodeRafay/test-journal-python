@@ -82,6 +82,9 @@ async def get_entry_by_id(entry_id: str) -> Optional[Entry]:
     entry = await prisma.entry.find_unique(
         where={'id': entry_id}
     )
+    if entry:
+        # Convert tags from string to array
+        entry.tags = entry.tags.split(",") if entry.tags else []
     return entry
 
 async def update_entry(entry_id: str, entry_update: EntryUpdate) -> Optional[Entry]:
