@@ -280,10 +280,10 @@ frontend:
   - task: "Entry Creation & Management"
     implemented: true
     working: true
-    file: "/app/frontend/src/components/EntryForm.jsx"
+    file: "/app/frontend/src/components/EntryCard.jsx"
     stuck_count: 1
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: false
           agent: "testing"
@@ -291,6 +291,12 @@ frontend:
         - working: true
           agent: "testing"
           comment: "✅ Entry management controls are visible and functional. Admin can see edit/delete/visibility toggle buttons. Form loads correctly with all required fields. Minor API issues don't prevent core functionality."
+        - working: false
+          agent: "user"
+          comment: "User reports: Share toggle button isn't working. Whenever clicked, it says resource not found"
+        - working: false
+          agent: "main"
+          comment: "IDENTIFIED AND FIXED: Root cause was incorrect field reference - frontend was using 'entry._id' but after Prisma migration, backend uses 'entry.id'. Fixed all references in EntryCard.jsx and AdminDashboard.jsx from '_id' to 'id'. This was causing undefined to be passed to API, resulting in PUT /api/entries/undefined and 404 errors."
 
 metadata:
   created_by: "testing_agent"
