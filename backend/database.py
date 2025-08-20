@@ -59,9 +59,11 @@ async def get_entries(search: Optional[str] = None, category: Optional[str] = No
     # Fetch entries sorted by date created (newest first)
     entries = await prisma.entry.find_many(
         where=where_conditions,
-        order_by={'dateCreated': 'desc'},
         take=50
     )
+    
+    # Sort in Python since Prisma syntax is having issues
+    entries = sorted(entries, key=lambda x: x.dateCreated, reverse=True)
     
     return entries
 
