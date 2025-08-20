@@ -131,7 +131,7 @@ const AdminDashboard = () => {
     // Find the entry in current entries
     let targetEntry = null;
     Object.values(entries).forEach(categoryEntries => {
-      const found = categoryEntries.find(e => e._id === entryId);
+      const found = categoryEntries.find(e => e.id === entryId);
       if (found) targetEntry = found;
     });
 
