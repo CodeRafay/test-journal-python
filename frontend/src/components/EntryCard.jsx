@@ -59,7 +59,7 @@ const EntryCard = ({ entry, isAdmin = false, onEdit, onDelete, onToggleVisibilit
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => onDelete?.(entry._id)}
+                onClick={() => onDelete?.(entry.id)}
                 className="h-8 w-8 p-0 hover:bg-red-600/20 hover:text-red-400"
               >
                 <Trash2 className="w-4 h-4" />
