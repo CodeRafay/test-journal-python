@@ -351,7 +351,7 @@ const AdminDashboard = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {categoryEntries.map(entry => (
                       <EntryCard
-                        key={entry._id}
+                        key={entry.id}
                         entry={entry}
                         isAdmin={true}
                         onEdit={handleEditEntry}
