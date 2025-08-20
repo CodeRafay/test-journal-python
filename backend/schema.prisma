@@ -14,7 +14,7 @@ model Entry {
   title        String
   content      String
   category     String
-  tags         String[] // PostgreSQL supports string arrays
+  tags         String   @default("") // Comma-separated tags for SQLite
   isShared     Boolean  @default(false) @map("is_shared")
   dateCreated  DateTime @default(now()) @map("date_created")
   dateModified DateTime @updatedAt @map("date_modified")
