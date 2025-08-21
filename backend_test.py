@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 # Configuration
-BASE_URL = "https://broken-share-btn.preview.emergentagent.com/api"
+BASE_URL = "https://vercel-backend-flow.preview.emergentagent.com/api"
 ADMIN_PASSWORD = "12345678"
 VIEWER_PASSWORD = "87654321"
 INVALID_PASSWORD = "wrongpassword"
